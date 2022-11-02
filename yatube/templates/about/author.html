@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}Об авторе проекта{% endblock %}
+
+{% block content %}
+  <div class="container py-5">
+    <h1>Привет, я Илья!</h1>
+    <h4>
+      Здесь могла быть информация обо мне,<br>но я боюсь не успеть выполнить пятый спринт.
+    </h4>
+    <br>
+    <img src="{% static "img/sheldon.jpg" %}" width="466" height="533">
+  </div>
+{% endblock %} 

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+{% extends "base.html" %}
+
+{% block title %}Записи сообщества: {{ group.title }}{% endblock title %}
+
+{% block content %}
+  <div class="container py-5">
+    <h1>{{ group.title }}</h1>
+    <p>
+      {{ group.description|linebreaksbr }}
+    </p>
+    <div class="container">
+      {% for post in page_obj %}
+        <article>
+          {% include "includes/post.html" %}
+          <a href="{% url "posts:post_detail" post.id %}">подробная информация </a>
+        </article>
+        {% if post.group %}
+          <a href="{% url "posts:group_list" post.group.slug %}"> {{ post.group.title|lower }}</a>
+        {% endif %}
+        {% if not forloop.last %}<hr>{% endif %}
+      {% endfor %}
+      {% include "includes/paginator.html" %}
+    </div>
+  </div>
+{% endblock %}
