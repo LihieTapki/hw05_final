@@ -1,14 +1,14 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import models
 
-from core.models import CreatedModel
+from core.models import DefaultModel, Timestamped
 from core.utils import truncatechars
-from yatube.settings import NUMCATECHARS
 
 User = get_user_model()
 
 
-class Group(models.Model):
+class Group(DefaultModel):
     title = models.CharField(
         'название',
         max_length=200,
@@ -29,20 +29,10 @@ class Group(models.Model):
         verbose_name_plural = 'группы'
 
     def __str__(self) -> str:
-        return truncatechars(self.title, NUMCATECHARS)
+        return truncatechars(self.title, settings.NUMCATECHARS)
 
 
-class Post(CreatedModel):
-    text = models.TextField(
-        verbose_name='текст поста',
-        help_text='введите текст поста',
-    )
-    author = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        verbose_name='автор',
-        help_text='укажите автора поста',
-    )
+class Post(DefaultModel, Timestamped):
     group = models.ForeignKey(
         Group,
         on_delete=models.SET_NULL,
@@ -58,17 +48,16 @@ class Post(CreatedModel):
         help_text='добавьте изображение',
     )
 
-    class Meta:
-        ordering = ('-created',)
+    class Meta(DefaultModel.Meta, Timestamped.Meta):
         default_related_name = 'posts'
         verbose_name = 'пост'
         verbose_name_plural = 'посты'
 
     def __str__(self) -> str:
-        return truncatechars(self.text, NUMCATECHARS)
+        return truncatechars(self.text, settings.NUMCATECHARS)
 
 
-class Comment(CreatedModel):
+class Comment(DefaultModel, Timestamped):
     post = models.ForeignKey(
         Post,
         on_delete=models.CASCADE,
@@ -79,24 +68,19 @@ class Comment(CreatedModel):
         User,
         on_delete=models.CASCADE,
         verbose_name='автор',
-        help_text='укажите автора комментария',
-    )
-    text = models.TextField(
-        verbose_name='текст комментария',
-        help_text='введите текст комментария',
+        help_text='укажите автора',
     )
 
-    class Meta:
-        ordering = ('-created',)
+    class Meta(DefaultModel.Meta, Timestamped.Meta):
         default_related_name = 'comments'
         verbose_name = 'комментарий'
         verbose_name_plural = 'комментарии'
 
     def __str__(self) -> str:
-        return truncatechars(self.text, NUMCATECHARS)
+        return truncatechars(self.text, settings.NUMCATECHARS)
 
 
-class Follow(models.Model):
+class Follow(DefaultModel):
     user = models.ForeignKey(
         User,
         related_name='follower',
@@ -115,7 +99,6 @@ class Follow(models.Model):
     class Meta:
         verbose_name = 'подписчик'
         verbose_name_plural = 'подписчики'
-        default_related_name = 'follow'
 
     def __str__(self) -> str:
-        return self.user.username
+        return f'{self.user.username} подписан на {self.author.username}'

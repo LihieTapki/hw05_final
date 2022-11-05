@@ -5,14 +5,14 @@
 
 {% block content %}
   <div class="container py-5">
-    {% include 'includes/switcher.html' %}
+    {% include "includes/switcher.html" %}
     {% for post in page_obj %}
       <article>
-        {% include "includes/post.html" %}
-        <a href="{% url "posts:post_detail" post.id %}">подробная информация </a>
+        {% include "posts/includes/post.html" %}
+        <a href="{% url 'posts:post_detail' post.id %}">подробная информация </a>
         <br>
         {% if post.group %}
-          все записи сообщества: <a href="{% url "posts:group_list" post.group.slug %}"> {{ post.group.title|lower }}</a>
+          все записи сообщества: <a href="{% url 'posts:group_list' post.group.slug %}"> {{ post.group.title|lower }}</a>
         {% endif %}
       </article>
       {% if not forloop.last %}<hr>{% endif %}

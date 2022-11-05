@@ -49,10 +49,10 @@ class GroupModelTest(TestCase):
 
 class PostModelTest(TestCase):
     MODEL_INFO = (
-        ('text', 'текст поста', 'введите текст поста'),
+        ('text', 'текст', 'введите текст'),
         ('group', 'группа', 'выберите группу'),
         ('created', 'дата создания', 'дата создания'),
-        ('author', 'автор', 'укажите автора поста'),
+        ('author', 'автор', 'укажите автора'),
         ('image', 'изображение', 'добавьте изображение'),
     )
 
@@ -87,9 +87,9 @@ class PostModelTest(TestCase):
 class CommentModelTest(TestCase):
     MODEL_INFO = (
         ('post', 'пост', 'укажите пост для комментария'),
-        ('author', 'автор', 'укажите автора комментария'),
+        ('author', 'автор', 'укажите автора'),
         ('created', 'дата создания', 'дата создания'),
-        ('text', 'текст комментария', 'введите текст комментария'),
+        ('text', 'текст', 'введите текст'),
     )
 
     @classmethod
@@ -135,7 +135,7 @@ class FollowModelTest(TestCase):
 
     def test_model_have_correct___str__(self):
         self.assertEqual(
-            self.user.username,
+            f'{self.user.username} подписан на {self.follow.author}',
             str(self.follow),
             'У модели некорректно работает __str__.',
         )

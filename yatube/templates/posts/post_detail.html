@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 {% extends "base.html" %}
-{% load thumbnail %}
 
+{% load thumbnail %}
 
 {% block title %}{{ post.text|truncatechars:30 }}{% endblock title %}
 
@@ -16,7 +16,7 @@
           {% if post.group %}
             <li class="list-group-item">
               Группа: {{ post.group.title|lower }}
-              <a href="{% url "posts:group_list" post.group.slug %}">
+              <a href="{% url 'posts:group_list' post.group.slug %}">
                 все записи группы
               </a>
             </li>
@@ -28,7 +28,7 @@
             Всего постов автора: <span >{{ post.author.posts.count }}</span>
           </li>
           <li class="list-group-item">
-            <a href="{% url "posts:profile" post.author.username %}">
+            <a href="{% url 'posts:profile' post.author.username %}">
               Все посты пользователя
             </a>
           </li>
@@ -42,7 +42,7 @@
           {{ post.text|linebreaksbr }}
         </p>
         {% if user == post.author %}
-          <a class="btn btn-primary" href="{% url "posts:post_edit" id=post.id %}">
+          <a class="btn btn-primary" href="{% url 'posts:post_edit' id=post.id %}">
             Редактировать
           </a>
         {% endif %}

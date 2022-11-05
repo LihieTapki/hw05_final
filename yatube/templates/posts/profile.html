@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 {% extends "base.html" %}
+
 {% load thumbnail %}
 
 {% block title %}Профайл пользователя{{ author.get_full_name }}{% endblock title %}
@@ -12,19 +13,20 @@
       {% if following %}
         <a
           class="btn btn-lg btn-light"
-          href="{% url "posts:profile_unfollow" author.username %}" role="button">
+          href="{% url 'posts:profile_unfollow' author.username %}" role="button">
           Отписаться
         </a>
       {% else %}
           <a
             class="btn btn-lg btn-primary"
-            href="{% url "posts:profile_follow" author.username %}" role="button">
+            href="{% url 'posts:profile_follow' author.username %}" role="button">
             Подписаться
           </a>
       {% endif %}
     </div>
     {% for post in page_obj %}
       <article>
+        <!-- на этой странице представление поста отличается от о других т.к. здесь нет у каждого поста строчки "автор" -->
         <ul>
           <li>
             Дата публикации: {{ post.created|date:"d E Y" }}
@@ -34,10 +36,10 @@
           <img class="card-img my-2" src="{{ im.url }}">
         {% endthumbnail %}
         <p>{{ post.text|linebreaksbr }}</p>
-        <a href="{% url "posts:post_detail" post.id %}">подробная информация </a>
+        <a href="{% url 'posts:post_detail' post.id %}">подробная информация </a>
       </article>
       {% if post.group %}
-        все записи сообщества: <a href="{% url "posts:group_list" post.group.slug %}"> {{ post.group.title|lower }}</a>
+        все записи сообщества: <a href="{% url 'posts:group_list' post.group.slug %}"> {{ post.group.title|lower }}</a>
       {% endif %}
       {% if not forloop.last %}<hr>{% endif %}
     {% endfor %}

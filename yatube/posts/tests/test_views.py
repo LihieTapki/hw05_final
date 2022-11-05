@@ -64,13 +64,10 @@ class PostURLTests(TestCase):
             cls.follow_index_url,
         )
         cls.urls = (
-            (
-                cls.post_url,
-                POST_CREATE_URL,
-                cls.post_edit_url,
-            )
-            + cls.paginated
-        )
+            cls.post_url,
+            POST_CREATE_URL,
+            cls.post_edit_url,
+        ) + cls.paginated
 
     def setUp(self):
         cache.clear()
