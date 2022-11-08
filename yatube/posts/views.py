@@ -152,12 +152,3 @@ def profile_follow(request: HttpRequest, username: str) -> HttpResponse:
     return redirect('posts:profile', author.username)
 
 
-@login_required
-def profile_unfollow(request: HttpRequest, username: str) -> HttpResponse:
-    follow = get_object_or_404(
-        Follow,
-        user=request.user,
-        author__username=username,
-    )
-    follow.delete()
-    return redirect('posts:index')
