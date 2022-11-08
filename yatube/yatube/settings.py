@@ -1,12 +1,10 @@
 import os
 
-# from core.environ import env
+from core.environ import env
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# SECRET_KEY = env('SECRET_KEY', cast=str, default='s3cr3t')
-
-SECRET_KEY = 'qd&+_492$8sf5_t7pw7+#27!hnkb^!7%a90t9v0)(8$+4_i$wm'
+SECRET_KEY = env('SECRET_KEY', cast=str, default='s3cr3t')
 
 DEBUG = True
 
@@ -106,7 +104,7 @@ EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
 
 EMAIL_FILE_PATH = os.path.join(BASE_DIR, 'sent_emails')
 
-QUANTITY_PER_PAGE = 10
+PAGE_SIZE = 10
 
 NUMCATECHARS = 15
 

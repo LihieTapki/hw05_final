@@ -2,7 +2,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import models
 
-from core.models import DefaultModel, Timestamped
+from core.models import DefaultModel, TextAuthorModel
 from core.utils import truncatechars
 
 User = get_user_model()
@@ -32,7 +32,7 @@ class Group(DefaultModel):
         return truncatechars(self.title, settings.NUMCATECHARS)
 
 
-class Post(DefaultModel, Timestamped):
+class Post(TextAuthorModel):
     group = models.ForeignKey(
         Group,
         on_delete=models.SET_NULL,
@@ -48,7 +48,7 @@ class Post(DefaultModel, Timestamped):
         help_text='добавьте изображение',
     )
 
-    class Meta(DefaultModel.Meta, Timestamped.Meta):
+    class Meta(DefaultModel.Meta, TextAuthorModel.Meta):
         default_related_name = 'posts'
         verbose_name = 'пост'
         verbose_name_plural = 'посты'
@@ -57,21 +57,15 @@ class Post(DefaultModel, Timestamped):
         return truncatechars(self.text, settings.NUMCATECHARS)
 
 
-class Comment(DefaultModel, Timestamped):
+class Comment(TextAuthorModel):
     post = models.ForeignKey(
         Post,
         on_delete=models.CASCADE,
         verbose_name='пост',
         help_text='укажите пост для комментария',
     )
-    author = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        verbose_name='автор',
-        help_text='укажите автора',
-    )
 
-    class Meta(DefaultModel.Meta, Timestamped.Meta):
+    class Meta(DefaultModel.Meta, TextAuthorModel.Meta):
         default_related_name = 'comments'
         verbose_name = 'комментарий'
         verbose_name_plural = 'комментарии'

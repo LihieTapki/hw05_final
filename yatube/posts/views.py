@@ -21,7 +21,7 @@ def index(request: HttpRequest) -> HttpResponse:
             'page_obj': paginate(
                 request,
                 Post.objects.select_related('group', 'author'),
-                settings.QUANTITY_PER_PAGE,
+                settings.PAGE_SIZE,
             ),
         },
     )
@@ -37,7 +37,7 @@ def group_list(request: HttpRequest, slug: str) -> HttpResponse:
             'page_obj': paginate(
                 request,
                 group.posts.select_related('group', 'author'),
-                settings.QUANTITY_PER_PAGE,
+                settings.PAGE_SIZE,
             ),
         },
     )
@@ -53,11 +53,11 @@ def profile(request: HttpRequest, username: str) -> HttpResponse:
             'page_obj': paginate(
                 request,
                 author.posts.select_related('group', 'author'),
-                settings.QUANTITY_PER_PAGE,
+                settings.PAGE_SIZE,
             ),
-            'following': request.user.is_authenticated
-            and author.id
-            in request.user.follower.values_list('author', flat=True),
+            'following': (
+                request.user.is_authenticated and author.id
+                in request.user.follower.values_list('author', flat=True)),
         },
     )
 
@@ -71,7 +71,6 @@ def post_detail(request: HttpRequest, id: int) -> HttpResponse:
             'post': post,
             'form': CommentForm(),
             'comments': post.comments.select_related('post', 'author'),
-            # коментарии отображаются под постом и формой по ТЗ
         },
     )
 
@@ -121,6 +120,8 @@ def post_edit(request: HttpRequest, id: int) -> HttpResponse:
 def add_comment(request: HttpRequest, id: int) -> HttpResponse:
     post = get_object_or_404(Post, id=id)
     form = CommentForm(request.POST or None)
+    # в шаблоне указан method="post"
+    # но если уберу здесь перестаёт сохранятся в БД.
     if form.is_valid():
         form.instance.author = request.user
         form.instance.post = post
@@ -134,12 +135,11 @@ def follow_index(request: HttpRequest) -> HttpResponse:
     posts = Post.objects.select_related('group', 'author').filter(
         author__in=following,
     )
-    page_obj = paginate(request, posts, settings.QUANTITY_PER_PAGE)
     return render(
         request,
         'posts/follow.html',
         {
-            'page_obj': page_obj,
+            'page_obj': paginate(request, posts, settings.PAGE_SIZE),
         },
     )
 

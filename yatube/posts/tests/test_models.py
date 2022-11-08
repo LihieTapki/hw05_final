@@ -1,9 +1,9 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from django.conf import settings
 from mixer.backend.django import mixer
 
 from core.utils import truncatechars
-from yatube.settings import NUMCATECHARS
 
 User = get_user_model()
 
@@ -22,12 +22,11 @@ class GroupModelTest(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.user = User.objects.create_user(username='user')
         cls.group = mixer.blend('posts.group')
 
     def test_model_have_correct___str__(self):
         self.assertEqual(
-            truncatechars(self.group.title, NUMCATECHARS),
+            truncatechars(self.group.title, settings.NUMCATECHARS),
             str(self.group),
             'У модели некорректно работает __str__ 15 символов.',
         )
@@ -59,12 +58,11 @@ class PostModelTest(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.user = User.objects.create_user(username='user')
         cls.post = mixer.blend('posts.post')
 
     def test_post_model_have_correct_object_names(self):
         self.assertEqual(
-            truncatechars(self.post.text, NUMCATECHARS),
+            truncatechars(self.post.text, settings.NUMCATECHARS),
             str(self.post),
             'У модели некорректно работает __str__ 15 символов.',
         )
@@ -95,13 +93,12 @@ class CommentModelTest(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.user = User.objects.create_user(username='user')
         cls.post = mixer.blend('posts.post')
         cls.comment = mixer.blend('posts.comment', post=cls.post)
 
     def test_model_have_correct___str__(self):
         self.assertEqual(
-            truncatechars(self.comment.text, NUMCATECHARS),
+            truncatechars(self.comment.text, settings.NUMCATECHARS),
             str(self.comment),
             'У модели некорректно работает __str__ 15 символов.',
         )

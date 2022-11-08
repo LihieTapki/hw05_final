@@ -3,12 +3,13 @@ import tempfile
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.core.files.uploadedfile import SimpleUploadedFile
+from django.contrib.auth.views import redirect_to_login
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from mixer.backend.django import mixer
 
 from posts.models import Comment, Follow, Post
+from posts.tests.common import uploaded, new_uploaded
 
 User = get_user_model()
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
@@ -20,12 +21,15 @@ class PostFormTests(TestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.group = mixer.blend('posts.group')
+
         cls.anon = Client()
         cls.auth = Client()
         cls.author = Client()
+
         cls.user = User.objects.create_user(username='user')
         cls.user_author = User.objects.create_user(username='user_author')
         cls.other_user = User.objects.create_user(username='other_user')
+
         cls.auth.force_login(cls.user)
         cls.author.force_login(cls.user_author)
 
@@ -35,19 +39,6 @@ class PostFormTests(TestCase):
         shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
 
     def test_auth_user_create_post_ok(self):
-        small_gif = (
-            b'\x47\x49\x46\x38\x39\x61\x02\x00'
-            b'\x01\x00\x80\x00\x00\x00\x00\x00'
-            b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
-            b'\x00\x00\x00\x2C\x00\x00\x00\x00'
-            b'\x02\x00\x01\x00\x00\x02\x02\x0C'
-            b'\x0A\x00\x3B'
-        )
-        uploaded = SimpleUploadedFile(
-            name='small.gif',
-            content=small_gif,
-            content_type='image/gif',
-        )
         response = self.auth.post(
             reverse('posts:post_create'),
             {
@@ -69,17 +60,17 @@ class PostFormTests(TestCase):
             'После создания поста количество постов в базе не равно единице',
         )
         post = Post.objects.select_related('author', 'group').first()
-        field_values = {
-            'text': 'Тестовый пост',
-            'author': self.user,
-            'group': None,
-            'image': 'posts/small.gif',
-        }
-        for field, expected_value in field_values.items():
+        field_values = (
+            ('text', 'Тестовый пост'),
+            ('author', self.user),
+            ('group', None),
+            ('image', 'posts/small.gif'),
+        )
+        for field, expected in field_values:
             with self.subTest(field=field):
                 self.assertEqual(
                     getattr(post, field),
-                    expected_value,
+                    expected,
                     (
                         'Значения созданого поста не соответвуют '
                         'значениям сохраненного в базе поста'
@@ -106,6 +97,7 @@ class PostFormTests(TestCase):
             author=self.user_author,
             text='Тестовый пост',
             group=self.group,
+            image=new_uploaded,
         )
         response = self.author.post(
             reverse('posts:post_edit', args=(post.id,)),
@@ -127,108 +119,63 @@ class PostFormTests(TestCase):
                 'количество постов в базе изменилось'
             ),
         )
-        post = Post.objects.first()
-        field_values = {
-            post.text: 'Тестовый пост отредактирован',
-            post.author: self.user_author,
-            post.group: None,
-        }
-        for field, expected_value in field_values.items():
+        post = Post.objects.select_related('group', 'author').get()
+        field_values = (
+            ('text', 'Тестовый пост отредактирован'),
+            ('author', self.user_author),
+            ('group', None),
+            ('image', 'posts/new_small.gif'),
+        )
+        for field, expected in field_values:
             with self.subTest(field=field):
                 self.assertEqual(
-                    field,
-                    expected_value,
+                    getattr(post, field),
+                    expected,
                     (
                         'Значения измененного поста не соответвуют '
                         'значениям сохраненного в базе поста'
                     ),
                 )
 
-    def test_auth_user_edit_other_user_post_denied(self):
-        post = Post.objects.create(
+    def test_anon_and_auth_edit_other_user_post_denied(self):
+        post = mixer.blend(
+            'posts.post',
             author=self.other_user,
-            text='Тестовый пост',
             group=self.group,
         )
-        response = self.auth.post(
-            reverse('posts:post_edit', args=(post.id,)),
-            {'text': 'Тестовый пост отредактирован'},
-            follow=True,
-        )
-        self.assertRedirects(
-            response,
-            reverse(
-                'posts:post_detail',
-                args=(post.id,),
-            ),
-        )
-        self.assertEqual(
-            Post.objects.count(),
-            1,
-            (
-                'После попытки редактирования поста '
-                'количество постов в базе изменилось'
-            ),
-        )
-        post = Post.objects.first()
-        field_values = {
-            post.text: 'Тестовый пост',
-            post.author: self.other_user,
-            post.group: self.group,
-        }
-        for field, expected_value in field_values.items():
-            with self.subTest(field=field):
-                self.assertEqual(
-                    field,
-                    expected_value,
-                    (
-                        'Значения поста в базе после '
-                        'попытки редатировнаия изменились'
-                    ),
-                )
-
-    def test_anon_user_edit_post_denied(self):
-        post = Post.objects.create(
-            author=self.user_author,
-            text='Тестовый пост',
-            group=self.group,
-        )
-        response = self.anon.post(
-            reverse('posts:post_edit', args=(post.id,)),
-            {'text': 'Тестовый пост отредактирован'},
-            follow=True,
-        )
-        self.assertRedirects(
-            response,
-            reverse(
-                'posts:post_detail',
-                args=(post.id,),
-            ),
-        )
-        self.assertEqual(
-            Post.objects.count(),
-            1,
-            (
-                'После попытки редактирования поста '
-                'количество постов в базе изменилось'
-            ),
-        )
-        post = Post.objects.first()
-        field_values = {
-            post.text: 'Тестовый пост',
-            post.author: self.user_author,
-            post.group: self.group,
-        }
-        for field, expected_value in field_values.items():
-            with self.subTest(field=field):
-                self.assertEqual(
-                    field,
-                    expected_value,
-                    (
-                        'Значения поста в базе после '
-                        'попытки редатировнаия изменились'
-                    ),
-                )
+        client_list = ('anon', 'auth')
+        for client in client_list:
+            response = getattr(self, client).post(
+                reverse('posts:post_edit', args=(post.id,)),
+                {'text': 'Тестовый пост отредактирован'},
+                follow=True,
+            )
+            self.assertRedirects(
+                response,
+                reverse(
+                    'posts:post_detail',
+                    args=(post.id,),
+                ),
+            )
+            self.assertEqual(
+                Post.objects.count(),
+                1,
+                (
+                    'После попытки редактирования поста '
+                    'количество постов в базе изменилось'
+                ),
+            )
+            edited = Post.objects.select_related('group', 'author').get()
+            for field in ('text', 'author', 'group'):
+                with self.subTest(field=field):
+                    self.assertEqual(
+                        getattr(post, field),
+                        getattr(edited, field),
+                        (
+                            'Значения поста в базе после '
+                            'попытки редатировнаия изменились'
+                        ),
+                    )
 
     def test_anon_user_create_comment_denied(self):
         post = Post.objects.create(
@@ -243,7 +190,7 @@ class PostFormTests(TestCase):
         )
         self.assertRedirects(
             response,
-            f'/auth/login/?next=/posts/{post.id}/comment/',
+            redirect_to_login(f'/posts/{post.id}/comment/').url,
         )
         self.assertEqual(
             Comment.objects.count(),
@@ -268,15 +215,15 @@ class PostFormTests(TestCase):
             ),
         )
         follow = Follow.objects.first()
-        field_values = {
-            follow.user: self.user,
-            follow.author: self.user_author,
-        }
-        for field, expected_value in field_values.items():
+        field_values = (
+            ('user', self.user),
+            ('author', self.user_author),
+        )
+        for field, expected in field_values:
             with self.subTest(field=field):
                 self.assertEqual(
-                    field,
-                    expected_value,
+                    getattr(follow, field),
+                    expected,
                     (
                         'Значения созданой подписки не соответвуют '
                         'значениям сохраненной в базе подписки'

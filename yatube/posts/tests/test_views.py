@@ -8,8 +8,47 @@ from mixer.backend.django import mixer
 from posts.models import Post
 
 User = get_user_model()
+
+SLUG = 'group'
+AUTHOR = 'author'
 INDEX_URL = ('posts:index', 'posts/index.html', None)
 POST_CREATE_URL = ('posts:post_create', 'posts/create_post.html', None)
+GROUP_LIST_URL = (
+    'posts:group_list',
+    'posts/group_list.html',
+    (SLUG,),
+)
+PROFILE_URL = (
+    'posts:profile',
+    'posts/profile.html',
+    (AUTHOR,),
+)
+POST_URL = (
+    'posts:post_detail',
+    'posts/post_detail.html',
+    (1,),
+)
+POST_EDIT_URL = (
+    'posts:post_edit',
+    'posts/create_post.html',
+    (1,),
+)
+FOLLOW_INDEX_URL = (
+    'posts:follow_index',
+    'posts/follow.html',
+    None,
+)
+PAJINATED_URL = (
+    INDEX_URL,
+    GROUP_LIST_URL,
+    PROFILE_URL,
+    FOLLOW_INDEX_URL,
+)
+URLS = (
+    POST_URL,
+    POST_CREATE_URL,
+    POST_EDIT_URL,
+) + PAJINATED_URL
 
 
 class PostURLTests(TestCase):
@@ -19,61 +58,33 @@ class PostURLTests(TestCase):
         cls.auth = Client()
         cls.author = Client()
         cls.other_auth = Client()
+
         cls.user = User.objects.create_user(username='user')
+        cls.author_user = User.objects.create_user(username=AUTHOR)
         cls.other_user = User.objects.create_user(username='other_user')
-        cls.group = mixer.blend('posts.group')
-        cls.post = mixer.blend('posts.post', group=cls.group)
+
+        cls.auth.force_login(cls.user)
+        cls.author.force_login(cls.author_user)
+        cls.other_auth.force_login(cls.other_user)
+
+        cls.group = mixer.blend('posts.group', slug=SLUG)
+        cls.post = mixer.blend(
+            'posts.post',
+            author=cls.author_user,
+            group=cls.group,
+        )
         cls.comment = mixer.blend('posts.comment', post=cls.post)
         cls.follow = mixer.blend(
             'posts.follow',
             user=cls.user,
             author=cls.post.author,
         )
-        cls.auth.force_login(cls.user)
-        cls.author.force_login(cls.post.author)
-        cls.other_auth.force_login(cls.other_user)
-        cls.group_list_url = (
-            'posts:group_list',
-            'posts/group_list.html',
-            (cls.group.slug,),
-        )
-        cls.profile_url = (
-            'posts:profile',
-            'posts/profile.html',
-            (cls.post.author,),
-        )
-        cls.post_url = (
-            'posts:post_detail',
-            'posts/post_detail.html',
-            (cls.post.id,),
-        )
-        cls.post_edit_url = (
-            'posts:post_edit',
-            'posts/create_post.html',
-            (cls.post.id,),
-        )
-        cls.follow_index_url = (
-            'posts:follow_index',
-            'posts/follow.html',
-            None,
-        )
-        cls.paginated = (
-            INDEX_URL,
-            cls.group_list_url,
-            cls.profile_url,
-            cls.follow_index_url,
-        )
-        cls.urls = (
-            cls.post_url,
-            POST_CREATE_URL,
-            cls.post_edit_url,
-        ) + cls.paginated
 
     def setUp(self):
         cache.clear()
 
     def test_pages_uses_correct_template(self):
-        for reverse_name, template, args in self.urls:
+        for reverse_name, template, args in URLS:
             with self.subTest(reverse_name=reverse_name):
                 response = self.author.get(
                     reverse(reverse_name, args=args),
@@ -85,7 +96,7 @@ class PostURLTests(TestCase):
                 )
 
     def test_pages_index_group_list_profile_show_correct_context(self):
-        for reverse_name, _, args in self.paginated:
+        for reverse_name, _, args in PAJINATED_URL:
             with self.subTest(reverse_name=reverse_name):
                 response = self.auth.get(
                     reverse(reverse_name, args=args),
@@ -155,12 +166,12 @@ class PostURLTests(TestCase):
         )
         for views in views_names:
             response = self.author.get(views)
-            form_fields = {
-                'text': forms.fields.CharField,
-                'group': forms.ModelChoiceField,
-                'image': forms.fields.ImageField,
-            }
-            for value, expected in form_fields.items():
+            form_fields = (
+                ('text', forms.fields.CharField),
+                ('group', forms.ModelChoiceField),
+                ('image', forms.fields.ImageField),
+            )
+            for value, expected in form_fields:
                 with self.subTest(value=value):
                     form_field = response.context.get('form').fields.get(value)
                     self.assertIsInstance(

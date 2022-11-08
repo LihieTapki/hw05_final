@@ -1,6 +1,9 @@
+from behaviors.behaviors import Timestamped
 from django.contrib.auth import get_user_model
 from django.db import models
-from django.utils import timezone
+
+# from django.utils import timezone
+
 
 User = get_user_model()
 
@@ -10,7 +13,17 @@ class DefaultModel(models.Model):
         abstract = True
 
 
-class Timestamped(models.Model):
+class TimestampedModel(DefaultModel, Timestamped):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._meta.get_field('created').verbose_name = 'дата создания'
+        self._meta.get_field('created').help_text = 'дата создания'
+
+    class Meta:
+        abstract = True
+
+
+class TextAuthorModel(TimestampedModel):
     text = models.TextField(
         verbose_name='текст',
         help_text='введите текст',
@@ -21,23 +34,18 @@ class Timestamped(models.Model):
         verbose_name='автор',
         help_text='укажите автора',
     )
-    created = models.DateTimeField(
-        auto_now_add=True,
-        db_index=True,
-        verbose_name='дата создания',
-        help_text='дата создания',
-    )
-    modified = models.DateTimeField(null=True, blank=True, db_index=True)
 
     class Meta:
         ordering = ('-created',)
         abstract = True
 
-    @property
-    def changed(self):
-        return True if self.modified else False
+    # @property
+    # def changed(self):
+    #     return True if self.modified else False
 
-    def save(self, *args, **kwargs):
-        if self.pk:
-            self.modified = timezone.now()
-        return super(Timestamped, self).save(*args, **kwargs)
+    # def save(self, *args, **kwargs):
+    #     if self.pk:
+    #         self.modified = timezone.now()
+    #     return super(Timestamped, self).save(*args, **kwargs)
+    # просто понравился декаратор, но на данном этапе не смог придумать
+    # для чего бы это могло быть мне полезно, пока удалю.
