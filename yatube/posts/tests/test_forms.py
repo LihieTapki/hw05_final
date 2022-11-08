@@ -9,7 +9,7 @@ from django.urls import reverse
 from mixer.backend.django import mixer
 
 from posts.models import Comment, Follow, Post
-from posts.tests.common import uploaded, new_uploaded
+from posts.tests.common import new_uploaded, uploaded
 
 User = get_user_model()
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)

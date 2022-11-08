@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.core.paginator import Paginator
-from django.http import HttpRequest
 from django.db.models import QuerySet
+from django.http import HttpRequest
 
 
 def paginate(

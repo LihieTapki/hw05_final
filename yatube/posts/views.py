@@ -56,8 +56,10 @@ def profile(request: HttpRequest, username: str) -> HttpResponse:
                 settings.PAGE_SIZE,
             ),
             'following': (
-                request.user.is_authenticated and author.id
-                in request.user.follower.values_list('author', flat=True)),
+                request.user.is_authenticated
+                and author.id
+                in request.user.follower.values_list('author', flat=True)
+            ),
         },
     )
 

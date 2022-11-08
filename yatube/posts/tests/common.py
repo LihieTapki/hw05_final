@@ -1,6 +1,6 @@
 from django.core.files.uploadedfile import SimpleUploadedFile
 
-from posts.tests.consts import SMALL_GIF, NEW_SMALL_GIF
+from posts.tests.consts import NEW_SMALL_GIF, SMALL_GIF
 
 uploaded = SimpleUploadedFile(
     name='small.gif',

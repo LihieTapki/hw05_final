@@ -9,7 +9,7 @@ def page_not_found(request: HttpRequest, exception: Exception) -> HttpResponse:
     # FAILED tests/test_homework.py::TestCustomErrorPages::test_custom_404 -
     # TypeError: page_not_found() got an unexpected keyword argument'exception'
     # а на кваргс **__ ругаются мои тесты:
-    # ERRORS: ?: (urls.E007) The custom handler404 view 'core.views.page_not_found'
+    # ERRORS:?:(urls.E007)The custom handler404view'core.views.page_not_found'
     #  does not take the correct number of arguments (request, exception).
     return render(
         request,
