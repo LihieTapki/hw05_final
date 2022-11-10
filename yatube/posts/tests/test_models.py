@@ -24,14 +24,14 @@ class GroupModelTest(TestCase):
         super().setUpClass()
         cls.group = mixer.blend('posts.group')
 
-    def test_model_have_correct___str__(self):
+    def test_correct___str__(self) -> None:
         self.assertEqual(
             truncatechars(self.group.title, settings.NUMCATECHARS),
             str(self.group),
             'У модели некорректно работает __str__ 15 символов.',
         )
 
-    def test_verbose_name_help_text(self):
+    def test_verbose_name_help_text(self) -> None:
         for field, verbose_name, help_text in self.MODEL_INFO:
             with self.subTest(field=field):
                 self.assertEqual(
@@ -60,14 +60,14 @@ class PostModelTest(TestCase):
         super().setUpClass()
         cls.post = mixer.blend('posts.post')
 
-    def test_post_model_have_correct_object_names(self):
+    def test__correct___str__(self) -> None:
         self.assertEqual(
             truncatechars(self.post.text, settings.NUMCATECHARS),
             str(self.post),
             'У модели некорректно работает __str__ 15 символов.',
         )
 
-    def test_post_verbose_name_help_text(self):
+    def test_verbose_name_help_text(self) -> None:
         for field, verbose_name, help_text in self.MODEL_INFO:
             with self.subTest(field=field):
                 self.assertEqual(
@@ -96,14 +96,14 @@ class CommentModelTest(TestCase):
         cls.post = mixer.blend('posts.post')
         cls.comment = mixer.blend('posts.comment', post=cls.post)
 
-    def test_model_have_correct___str__(self):
+    def test_correct___str__(self) -> None:
         self.assertEqual(
             truncatechars(self.comment.text, settings.NUMCATECHARS),
             str(self.comment),
             'У модели некорректно работает __str__ 15 символов.',
         )
 
-    def test_comment_verbose_name_help_text(self):
+    def test_verbose_name_help_text(self) -> None:
         for field, verbose_name, help_text in self.MODEL_INFO:
             with self.subTest(field=field):
                 self.assertEqual(
@@ -127,17 +127,16 @@ class FollowModelTest(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.user = User.objects.create_user(username='user')
-        cls.follow = mixer.blend('posts.follow', user=cls.user)
+        cls.follow = mixer.blend('posts.follow')
 
-    def test_model_have_correct___str__(self):
+    def test_correct___str__(self) -> None:
         self.assertEqual(
-            f'{self.user.username} подписан на {self.follow.author}',
+            f'{self.follow.user} подписан на {self.follow.author}',
             str(self.follow),
             'У модели некорректно работает __str__.',
         )
 
-    def test_follow_verbose_name_help_text(self):
+    def test_verbose_name_help_text(self) -> None:
         for field, verbose_name, help_text in self.MODEL_INFO:
             with self.subTest(field=field):
                 self.assertEqual(

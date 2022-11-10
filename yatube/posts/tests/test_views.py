@@ -83,7 +83,7 @@ class PostURLTests(TestCase):
     def setUp(self):
         cache.clear()
 
-    def test_pages_uses_correct_template(self):
+    def test_pages_uses_correct_template(self) -> None:
         for reverse_name, template, args in URLS:
             with self.subTest(reverse_name=reverse_name):
                 response = self.author.get(
@@ -95,7 +95,7 @@ class PostURLTests(TestCase):
                     'URL-адрес не использует соответствующий шаблон',
                 )
 
-    def test_pages_index_group_list_profile_show_correct_context(self):
+    def test_pages_index_group_list_profile_show_correct_context(self) -> None:
         for reverse_name, _, args in PAJINATED_URL:
             with self.subTest(reverse_name=reverse_name):
                 response = self.auth.get(
@@ -119,7 +119,7 @@ class PostURLTests(TestCase):
                             ),
                         )
 
-    def test_post_detail_show_correct_context(self):
+    def test_post_detail_show_correct_context(self) -> None:
         response = self.author.get(
             reverse(
                 'posts:post_detail',
@@ -159,7 +159,7 @@ class PostURLTests(TestCase):
             'Шаблон post_detail сформирован с некорректным контекстом',
         )
 
-    def test_create_edit_show_correct_context(self):
+    def test_create_edit_show_correct_context(self) -> None:
         views_names = (
             reverse('posts:post_create'),
             (reverse('posts:post_edit', args=(self.post.id,))),
@@ -183,20 +183,21 @@ class PostURLTests(TestCase):
                         ),
                     )
 
-    def test_cache_index_ok(self):
-        response = self.author.get(reverse('posts:index'))
-        before_delete_posts = response.content
+    def test_cache_index_ok(self) -> None:
+        before_delete_posts = self.author.get(reverse('posts:index')).content
         post = Post.objects.get(id=self.post.id)
+
         post.delete()
-        response = self.author.get(reverse('posts:index'))
-        after_delete_posts = response.content
+        after_delete_posts = self.author.get(reverse('posts:index')).content
         self.assertEqual(before_delete_posts, after_delete_posts)
+
         cache.clear()
-        response = self.author.get(reverse('posts:index'))
-        after_cache_clear_posts = response.content
+        after_cache_clear_posts = self.author.get(
+            reverse('posts:index'),
+        ).content
         self.assertNotEqual(before_delete_posts, after_cache_clear_posts)
 
-    def test_author_post_appeared_in_follow_index_follower(self):
+    def test_author_post_appeared_in_follow_index_follower(self) -> None:
         new_post = Post.objects.create(
             author=self.post.author,
             text='Тестовый пост',
@@ -220,7 +221,7 @@ class PostURLTests(TestCase):
                     ),
                 )
 
-    def test_author_post_not_appeared_in_follow_index_unfollower(self):
+    def test_author_post_not_appeared_in_follow_index_unfollower(self) -> None:
         new_post = Post.objects.create(
             author=self.post.author,
             text='Тестовый пост',

@@ -1,5 +1,4 @@
 import shutil
-import tempfile
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -9,41 +8,54 @@ from django.urls import reverse
 from mixer.backend.django import mixer
 
 from posts.models import Comment, Follow, Post
-from posts.tests.common import new_uploaded, uploaded
+from posts.tests.common import image, postfields_check
 
 User = get_user_model()
-TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
 
-@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
+@override_settings(MEDIA_ROOT=settings.TEMP_MEDIA_ROOT)
 class PostFormTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         cls.group = mixer.blend('posts.group')
+        cls.urls = {
+            'comment': reverse(
+                'posts:add_comment',
+                args=(1,),
+            ),
+        }
 
         cls.anon = Client()
         cls.auth = Client()
         cls.author = Client()
 
-        cls.user = User.objects.create_user(username='user')
-        cls.user_author = User.objects.create_user(username='user_author')
-        cls.other_user = User.objects.create_user(username='other_user')
+        cls.user, cls.author_user = mixer.cycle(2).blend(
+            User,
+            username=(
+                name
+                for name in (
+                    'user',
+                    'author',
+                )
+            ),
+        )
 
         cls.auth.force_login(cls.user)
-        cls.author.force_login(cls.user_author)
+        cls.author.force_login(cls.author_user)
 
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
-        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
+        shutil.rmtree(settings.TEMP_MEDIA_ROOT, ignore_errors=True)
 
-    def test_auth_user_create_post_ok(self):
+    def test_auth_user_create_post_ok(self) -> None:
         response = self.auth.post(
             reverse('posts:post_create'),
             {
                 'text': 'Тестовый пост',
-                'image': uploaded,
+                'group': self.group.id,
+                'image': image(),
             },
             follow=True,
         )
@@ -63,8 +75,8 @@ class PostFormTests(TestCase):
         field_values = (
             ('text', 'Тестовый пост'),
             ('author', self.user),
-            ('group', None),
-            ('image', 'posts/small.gif'),
+            ('group', self.group),
+            ('image', 'posts/giffy.gif'),
         )
         for field, expected in field_values:
             with self.subTest(field=field):
@@ -77,7 +89,7 @@ class PostFormTests(TestCase):
                     ),
                 )
 
-    def test_anon_user_create_post_denied(self):
+    def test_anon_user_create_post_denied(self) -> None:
         self.anon.post(
             reverse('posts:post_create'),
             {'text': 'Тестовый пост'},
@@ -92,12 +104,12 @@ class PostFormTests(TestCase):
             ),
         )
 
-    def test_author_post_edit_ok(self):
+    def test_author_post_edit_ok(self) -> None:
         post = Post.objects.create(
-            author=self.user_author,
+            author=self.author_user,
             text='Тестовый пост',
             group=self.group,
-            image=new_uploaded,
+            image=image('new_giffy'),
         )
         response = self.author.post(
             reverse('posts:post_edit', args=(post.id,)),
@@ -122,9 +134,9 @@ class PostFormTests(TestCase):
         post = Post.objects.select_related('group', 'author').get()
         field_values = (
             ('text', 'Тестовый пост отредактирован'),
-            ('author', self.user_author),
+            ('author', self.author_user),
             ('group', None),
-            ('image', 'posts/new_small.gif'),
+            ('image', 'posts/new_giffy'),
         )
         for field, expected in field_values:
             with self.subTest(field=field):
@@ -137,14 +149,13 @@ class PostFormTests(TestCase):
                     ),
                 )
 
-    def test_anon_and_auth_edit_other_user_post_denied(self):
+    def test_anon_and_auth_edit_other_user_post_denied(self) -> None:
         post = mixer.blend(
             'posts.post',
-            author=self.other_user,
+            author=self.author_user,
             group=self.group,
         )
-        client_list = ('anon', 'auth')
-        for client in client_list:
+        for client in ('anon', 'auth'):
             response = getattr(self, client).post(
                 reverse('posts:post_edit', args=(post.id,)),
                 {'text': 'Тестовый пост отредактирован'},
@@ -166,20 +177,11 @@ class PostFormTests(TestCase):
                 ),
             )
             edited = Post.objects.select_related('group', 'author').get()
-            for field in ('text', 'author', 'group'):
-                with self.subTest(field=field):
-                    self.assertEqual(
-                        getattr(post, field),
-                        getattr(edited, field),
-                        (
-                            'Значения поста в базе после '
-                            'попытки редатировнаия изменились'
-                        ),
-                    )
+            postfields_check(self, post, edited)
 
-    def test_anon_user_create_comment_denied(self):
+    def test_anon_user_create_comment_denied(self) -> None:
         post = Post.objects.create(
-            author=self.other_user,
+            author=self.author_user,
             text='Тестовый пост',
             group=self.group,
         )
@@ -190,7 +192,7 @@ class PostFormTests(TestCase):
         )
         self.assertRedirects(
             response,
-            redirect_to_login(f'/posts/{post.id}/comment/').url,
+            redirect_to_login(self.urls.get('comment')).url,
         )
         self.assertEqual(
             Comment.objects.count(),
@@ -201,9 +203,9 @@ class PostFormTests(TestCase):
             ),
         )
 
-    def test_auth_follow_author(self):
+    def test_auth_follow_author(self) -> None:
         self.auth.post(
-            reverse('posts:profile_follow', args=(self.user_author.username,)),
+            reverse('posts:profile_follow', args=(self.author_user.username,)),
             follow=True,
         )
         self.assertEqual(
@@ -217,7 +219,7 @@ class PostFormTests(TestCase):
         follow = Follow.objects.first()
         field_values = (
             ('user', self.user),
-            ('author', self.user_author),
+            ('author', self.author_user),
         )
         for field, expected in field_values:
             with self.subTest(field=field):
@@ -230,15 +232,15 @@ class PostFormTests(TestCase):
                     ),
                 )
 
-    def test_auth_unfollow_author(self):
+    def test_auth_unfollow_author(self) -> None:
         Follow.objects.create(
             user=self.user,
-            author=self.user_author,
+            author=self.author_user,
         )
         self.auth.post(
             reverse(
                 'posts:profile_unfollow',
-                args=(self.user_author.username,),
+                args=(self.author_user.username,),
             ),
             follow=True,
         )

@@ -122,8 +122,6 @@ def post_edit(request: HttpRequest, id: int) -> HttpResponse:
 def add_comment(request: HttpRequest, id: int) -> HttpResponse:
     post = get_object_or_404(Post, id=id)
     form = CommentForm(request.POST or None)
-    # в шаблоне указан method="post"
-    # но если уберу здесь перестаёт сохранятся в БД.
     if form.is_valid():
         form.instance.author = request.user
         form.instance.post = post
@@ -133,9 +131,8 @@ def add_comment(request: HttpRequest, id: int) -> HttpResponse:
 
 @login_required
 def follow_index(request: HttpRequest) -> HttpResponse:
-    following = request.user.follower.values_list('author', flat=True)
     posts = Post.objects.select_related('group', 'author').filter(
-        author__in=following,
+        author__following__user=request.user,
     )
     return render(
         request,
@@ -156,10 +153,9 @@ def profile_follow(request: HttpRequest, username: str) -> HttpResponse:
 
 @login_required
 def profile_unfollow(request: HttpRequest, username: str) -> HttpResponse:
-    follow = get_object_or_404(
+    get_object_or_404(
         Follow,
         user=request.user,
         author__username=username,
-    )
-    follow.delete()
+    ).delete()
     return redirect('posts:index')

@@ -28,7 +28,7 @@ class PaginatorViewsTest(TestCase):
             )
             num_post += 1
 
-    def test_first_page_contains_ten_records(self):
+    def test_first_page_contains_ten_records(self) -> None:
         templates = {
             ('posts:index', None, 10),
             ('posts:group_list', (self.group.slug,), 10),
@@ -39,7 +39,7 @@ class PaginatorViewsTest(TestCase):
                 response = self.client.get(reverse(views, args=args))
                 self.assertEqual(len(response.context['page_obj']), template)
 
-    def test_second_page_contains_three_records(self):
+    def test_second_page_contains_three_records(self) -> None:
         templates = {
             ('posts:index', None, 3),
             ('posts:group_list', (self.group.slug,), 3),
@@ -54,7 +54,7 @@ class PaginatorViewsTest(TestCase):
 
 
 class ViewTestClass(TestCase):
-    def test_error_page(self):
+    def test_error_page(self) -> None:
         response = self.client.get('/unexisting_page/')
         self.assertEqual(
             response.status_code,
