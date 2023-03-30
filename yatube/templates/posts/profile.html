@@ -3,7 +3,7 @@
 
 {% load thumbnail %}
 
-{% block title %}Профайл пользователя{{ author.get_full_name }}{% endblock title %}
+{% block title %}Профайл пользователя {{ author.get_full_name }}{% endblock title %}
 
 {% block content %}
   <div class="container py-5">
@@ -26,7 +26,6 @@
     </div>
     {% for post in page_obj %}
       <article>
-        <!-- на этой странице представление поста отличается от о других т.к. здесь нет у каждого поста строчки "автор" -->
         <ul>
           <li>
             Дата публикации: {{ post.created|date:"d E Y" }}

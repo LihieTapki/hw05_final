@@ -9,47 +9,6 @@ from posts.models import Post
 
 User = get_user_model()
 
-SLUG = 'group'
-AUTHOR = 'author'
-INDEX_URL = ('posts:index', 'posts/index.html', None)
-POST_CREATE_URL = ('posts:post_create', 'posts/create_post.html', None)
-GROUP_LIST_URL = (
-    'posts:group_list',
-    'posts/group_list.html',
-    (SLUG,),
-)
-PROFILE_URL = (
-    'posts:profile',
-    'posts/profile.html',
-    (AUTHOR,),
-)
-POST_URL = (
-    'posts:post_detail',
-    'posts/post_detail.html',
-    (1,),
-)
-POST_EDIT_URL = (
-    'posts:post_edit',
-    'posts/create_post.html',
-    (1,),
-)
-FOLLOW_INDEX_URL = (
-    'posts:follow_index',
-    'posts/follow.html',
-    None,
-)
-PAJINATED_URL = (
-    INDEX_URL,
-    GROUP_LIST_URL,
-    PROFILE_URL,
-    FOLLOW_INDEX_URL,
-)
-URLS = (
-    POST_URL,
-    POST_CREATE_URL,
-    POST_EDIT_URL,
-) + PAJINATED_URL
-
 
 class PostURLTests(TestCase):
     @classmethod
@@ -59,15 +18,13 @@ class PostURLTests(TestCase):
         cls.author = Client()
         cls.other_auth = Client()
 
-        cls.user = User.objects.create_user(username='user')
-        cls.author_user = User.objects.create_user(username=AUTHOR)
-        cls.other_user = User.objects.create_user(username='other_user')
+        cls.user, cls.author_user, cls.other_user = mixer.cycle(3).blend(User)
 
         cls.auth.force_login(cls.user)
         cls.author.force_login(cls.author_user)
         cls.other_auth.force_login(cls.other_user)
 
-        cls.group = mixer.blend('posts.group', slug=SLUG)
+        cls.group = mixer.blend('posts.group')
         cls.post = mixer.blend(
             'posts.post',
             author=cls.author_user,
@@ -79,28 +36,32 @@ class PostURLTests(TestCase):
             user=cls.user,
             author=cls.post.author,
         )
+        cls.urls = {
+            'index': reverse('posts:index'),
+            'post_create': reverse('posts:post_create'),
+            'group_list': reverse('posts:group_list', args=(cls.group.slug,)),
+            'profile': reverse(
+                'posts:profile',
+                args=(cls.author_user.username,),
+            ),
+            'post_detail': reverse('posts:post_detail', args=(cls.post.id,)),
+            'post_edit': reverse('posts:post_edit', args=(cls.post.id,)),
+            'follow_index': reverse('posts:follow_index'),
+        }
 
     def setUp(self):
         cache.clear()
 
-    def test_pages_uses_correct_template(self) -> None:
-        for reverse_name, template, args in URLS:
-            with self.subTest(reverse_name=reverse_name):
-                response = self.author.get(
-                    reverse(reverse_name, args=args),
-                )
-                self.assertTemplateUsed(
-                    response,
-                    template,
-                    'URL-адрес не использует соответствующий шаблон',
-                )
-
     def test_pages_index_group_list_profile_show_correct_context(self) -> None:
-        for reverse_name, _, args in PAJINATED_URL:
-            with self.subTest(reverse_name=reverse_name):
-                response = self.auth.get(
-                    reverse(reverse_name, args=args),
-                )
+        paginated = (
+            self.urls.get('index'),
+            self.urls.get('group_list'),
+            self.urls.get('profile'),
+            self.urls.get('follow_index'),
+        )
+        for address in paginated:
+            with self.subTest(address=address):
+                response = self.auth.get(address)
                 post = response.context['page_obj'][0]
                 contexts = (
                     ('text', self.post.text),
@@ -198,10 +159,9 @@ class PostURLTests(TestCase):
         self.assertNotEqual(before_delete_posts, after_cache_clear_posts)
 
     def test_author_post_appeared_in_follow_index_follower(self) -> None:
-        new_post = Post.objects.create(
+        new_post = mixer.blend(
+            'posts.post',
             author=self.post.author,
-            text='Тестовый пост',
-            group=self.group,
         )
         response = self.auth.get(reverse('posts:follow_index'))
         post = response.context['page_obj'][0]
@@ -222,10 +182,9 @@ class PostURLTests(TestCase):
                 )
 
     def test_author_post_not_appeared_in_follow_index_unfollower(self) -> None:
-        new_post = Post.objects.create(
+        new_post = mixer.blend(
+            'posts.post',
             author=self.post.author,
-            text='Тестовый пост',
-            group=self.group,
         )
         response = self.other_auth.get(reverse('posts:follow_index'))
         self.assertNotIn(

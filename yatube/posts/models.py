@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.db.models import UniqueConstraint
 
 from core.models import DefaultModel, TextAuthorModel
 from core.utils import truncatechars
@@ -91,6 +92,10 @@ class Follow(DefaultModel):
     )
 
     class Meta:
+        UniqueConstraint(
+            fields=['user', 'author'],
+            name='unique_follow',
+        )
         verbose_name = 'подписчик'
         verbose_name_plural = 'подписчики'
 

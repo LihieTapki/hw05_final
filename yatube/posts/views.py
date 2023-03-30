@@ -131,14 +131,17 @@ def add_comment(request: HttpRequest, id: int) -> HttpResponse:
 
 @login_required
 def follow_index(request: HttpRequest) -> HttpResponse:
-    posts = Post.objects.select_related('group', 'author').filter(
-        author__following__user=request.user,
-    )
     return render(
         request,
         'posts/follow.html',
         {
-            'page_obj': paginate(request, posts, settings.PAGE_SIZE),
+            'page_obj': paginate(
+                request,
+                Post.objects.select_related('group', 'author').filter(
+                    author__following__user=request.user,
+                ),
+                settings.PAGE_SIZE,
+            ),
         },
     )
 

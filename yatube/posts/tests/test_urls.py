@@ -1,8 +1,7 @@
-import shutil
 from http import HTTPStatus
 
-from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.auth.views import redirect_to_login
 from django.core.cache import cache
 from django.test import Client, TestCase
 from django.urls import reverse
@@ -19,16 +18,7 @@ class PostURLTests(TestCase):
         cls.auth = Client()
         cls.author = Client()
 
-        cls.user, cls.author_user = mixer.cycle(2).blend(
-            User,
-            username=(
-                name
-                for name in (
-                    'user',
-                    'author',
-                )
-            ),
-        )
+        cls.user, cls.author_user = mixer.cycle(2).blend(User)
         cls.group = mixer.blend('posts.group')
         cls.post = mixer.blend(
             'posts.post',
@@ -50,11 +40,6 @@ class PostURLTests(TestCase):
             'profile': reverse('posts:profile', args=(cls.user.username,)),
             'missing': 'unexisting_page',
         }
-
-    @classmethod
-    def tearDownClass(cls):
-        super().tearDownClass()
-        shutil.rmtree(settings.TEMP_MEDIA_ROOT, ignore_errors=True)
 
     def setUp(self):
         cache.clear()
@@ -79,7 +64,7 @@ class PostURLTests(TestCase):
                 self.assertEqual(
                     client.get(address).status_code,
                     status,
-                    ('Cтатус-код страницы ' 'не соответсвует ожидаемому'),
+                    ('Cтатус-код страницы не соответсвует ожидаемому'),
                 )
 
     def test_templates(self) -> None:
@@ -118,12 +103,26 @@ class PostURLTests(TestCase):
         redirects = (
             (
                 self.urls.get('post_create'),
-                '/auth/login/?next=/create/',
+                redirect_to_login(
+                    reverse('posts:post_create'),
+                ).url,
                 self.anon,
             ),
-            (self.urls.get('follow'), '/auth/login/?next=/follow/', self.anon),
-            (self.urls.get('post_edit'), f'/posts/{self.post.id}/', self.anon),
-            (self.urls.get('post_edit'), f'/posts/{self.post.id}/', self.auth),
+            (
+                self.urls.get('follow'),
+                redirect_to_login(reverse('posts:follow_index')).url,
+                self.anon,
+            ),
+            (
+                self.urls.get('post_edit'),
+                reverse('posts:post_detail', args=(self.post.id,)),
+                self.anon,
+            ),
+            (
+                self.urls.get('post_edit'),
+                reverse('posts:post_detail', args=(self.post.id,)),
+                self.auth,
+            ),
         )
         for address, redirection, client in redirects:
             with self.subTest(address=address):

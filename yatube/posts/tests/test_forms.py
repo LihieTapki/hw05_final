@@ -1,4 +1,5 @@
 import shutil
+import tempfile
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -12,42 +13,29 @@ from posts.tests.common import image, postfields_check
 
 User = get_user_model()
 
+TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
-@override_settings(MEDIA_ROOT=settings.TEMP_MEDIA_ROOT)
+
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
 class PostFormTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         cls.group = mixer.blend('posts.group')
-        cls.urls = {
-            'comment': reverse(
-                'posts:add_comment',
-                args=(1,),
-            ),
-        }
 
         cls.anon = Client()
         cls.auth = Client()
         cls.author = Client()
 
-        cls.user, cls.author_user = mixer.cycle(2).blend(
-            User,
-            username=(
-                name
-                for name in (
-                    'user',
-                    'author',
-                )
-            ),
-        )
+        cls.user, cls.author_user = mixer.cycle(2).blend(User)
 
         cls.auth.force_login(cls.user)
         cls.author.force_login(cls.author_user)
 
     @classmethod
     def tearDownClass(cls):
+        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
         super().tearDownClass()
-        shutil.rmtree(settings.TEMP_MEDIA_ROOT, ignore_errors=True)
 
     def test_auth_user_create_post_ok(self) -> None:
         response = self.auth.post(
@@ -192,7 +180,9 @@ class PostFormTests(TestCase):
         )
         self.assertRedirects(
             response,
-            redirect_to_login(self.urls.get('comment')).url,
+            redirect_to_login(
+                reverse('posts:add_comment', args=(post.id,)),
+            ).url,
         )
         self.assertEqual(
             Comment.objects.count(),

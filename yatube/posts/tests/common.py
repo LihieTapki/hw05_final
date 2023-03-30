@@ -9,9 +9,7 @@ from posts.models import Post
 
 def image(name: str = 'giffy.gif') -> SimpleUploadedFile:
     file = BytesIO()
-    image = Image.new('RGBA', size=(50, 50), color=(155, 0, 0))
-    image.save(file, 'png')
-    file.name = 'test.png'
+    Image.new('RGBA', size=(1, 1), color=(155, 0, 0)).save(file, 'gif')
     file.seek(0)
     return SimpleUploadedFile(
         name=name,

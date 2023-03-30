@@ -35,5 +35,5 @@ class TextAuthorModel(TimestampedModel):
     )
 
     class Meta:
-        ordering = ('-created',)
         abstract = True
+        ordering = ('-created',)
