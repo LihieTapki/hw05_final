@@ -1,4 +1,4 @@
-# Ya_project_
+# Ya_project
 
 (https://github.com/afanasev-ilia/ya_project)
 
